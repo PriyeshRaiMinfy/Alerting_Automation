@@ -1,0 +1,203 @@
+route:
+  group_by: ['alertname', 'job', 'instance','severity']
+  group_wait: 10s
+  group_interval: 5m
+  repeat_interval: 5h
+  receiver: 'Haldia'
+
+  # ROUTING LOGIC
+  routes:
+    # -----------------------------------------------------------
+    # 1 EC2-start10AM
+    # Mon-Fri 09:30-17:30 IST (04:00-12:00 UTC)
+    # Maintenance: Mute between 09:36-17:30 IST (04:06-12:00 UTC)
+    # -----------------------------------------------------------
+    - match:
+        schedule: '10AM_Start'
+      receiver: 'Haldia'
+      active_time_intervals:
+        - business_hours_930_530_ist
+      mute_time_intervals:
+        - maintenance_window_group1
+
+    # -----------------------------------------------------------
+    # 2. SERVER GROUP: EC2start
+    #    Schedule: Mon-Fri 09:30-17:30 IST (04:00-12:00 UTC)
+    # -----------------------------------------------------------
+    - match:
+        schedule: 'Generic_Start'
+      receiver: 'Haldia'
+      active_time_intervals:
+        - business_hours_930_530_ist
+
+    # -----------------------------------------------------------
+    # 3. SERVER GROUP: EC2start9AM
+    #    Schedule: Mon-Fri 09:30-17:30 IST (04:00-12:00 UTC)
+    # -----------------------------------------------------------
+    - match:
+        schedule: '9AM_Start'
+      receiver: 'Haldia'
+      active_time_intervals:
+        - business_hours_930_530_ist
+
+    # -----------------------------------------------------------
+    # 4. SERVER GROUP: EC2start10AM (No Hyphen)
+    #    Schedule: Mon-Fri 10:00-22:00 IST (04:30-16:30 UTC)
+    # -----------------------------------------------------------
+    - match:
+        schedule: '10AM_Start_NoHyphen'
+      receiver: 'Haldia'
+      active_time_intervals:
+        - business_hours_1000_2200_ist
+
+    # -----------------------------------------------------------
+    # 5. SERVER GROUP: QAEC2DBstart
+    #    Schedule: Mon-Fri 09:30-17:30 IST (04:00-12:00 UTC)
+    # -----------------------------------------------------------
+    - match:
+        schedule: 'QA_DB_Start'
+      receiver: 'Haldia'
+      active_time_intervals:
+        - business_hours_930_530_ist
+#  routes:
+    - match:
+        alertname: HostMemoryTrouble
+      receiver: 'Haldia'
+    - match:
+        alertname: HostMemoryTroubleResolved
+      receiver: 'Haldia'
+    - match:
+        alertname: HostMemoryCritical
+      receiver: 'Haldia'
+    - match:
+        alertname: HostHighCpuLoadTrouble
+      receiver: 'Haldia'
+    - match:
+        alertname: HostHighCpuLoadCritical
+      receiver: 'Haldia'
+    - match:
+        alertname: HostHighCpuLoadResolved
+      receiver: 'Haldia'
+    - match:
+        alertname: HostHighSwapUsageTrouble
+      receiver: 'Haldia'
+    - match:
+        alertname: HostHighSwapUsageCritical
+      receiver: 'Haldia'
+    - match:
+        alertname: HostHighSwapUsageResolved
+      receiver: 'Haldia'
+    - match:
+        alertname: DiskIOHighCritical
+      receiver: 'Haldia'
+    - match:
+        alertname: DiskIOResolved
+      receiver: 'Haldia'
+    - match:
+        alertname: HostDiskUtilizationTrouble
+      receiver: 'Haldia'
+    - match:
+        alertname: HostDiskUtilizationCritical
+      receiver: 'Haldia'
+    - match:
+        alertname: HostDiskUtilizationResolved
+      receiver: 'Haldia'
+    - match:
+        alertname: HostDiskPartitionUsageTrouble
+      receiver: 'Haldia'
+    - match:
+        alertname: HostDiskPartitionUsageCritical
+      receiver: 'Haldia'
+    - match:
+        alertname: HostDiskPartitionUsageResolved
+      receiver: 'Haldia'
+    - match:
+        alertname: RDSInstanceCPUTrouble
+      receiver: 'Haldia'
+    - match:
+        alertname: RDSInstanceCPUCritical
+      receiver: 'Haldia'
+    - match:
+        alertname: RDSInstanceCPUResolved
+      receiver: 'Haldia'
+    - match:
+        alertname: RDSInstanceLowBurstBalanceTrouble
+      receiver: 'Haldia'
+    - match:
+        alertname: RDSInstanceLowBurstBalanceCritical
+      receiver: 'Haldia'
+    - match:
+        alertname: RDSInstanceBurstBalanceResolved
+      receiver: 'Haldia'
+    - match:
+        alertname: RDSInstanceLowFreeableMemoryTrouble
+      receiver: 'Haldia'
+    - match:
+        alertname: RDSInstanceLowFreeableMemoryCritical
+      receiver: 'Haldia'
+    - match:
+        alertname: RDSInstanceFreeableMemoryResolved
+      receiver: 'Haldia'
+    - match:
+        alertname: RDSInstanceHighConnectionCountTrouble
+      receiver: 'Haldia'
+    - match:
+        alertname: RDSInstanceHighConnectionCountCritical
+      receiver: 'Haldia'
+    - match:
+        alertname: RDSInstanceConnectionCountResolved
+      receiver: 'Haldia'
+
+    # Add more alertname and receiver configurations as needed
+
+receivers:
+  - name: 'Haldia'
+    webhook_configs:
+      - url: 'https://1iagdbxt8d.execute-api.ap-south-1.amazonaws.com/Prod/GraphanaWebhook'
+        http_config:
+          authorization:
+            credentials: NzBkNDIxOTEwMmUyNDQyMzgxZGJhOWQ0YWM4ZTAzNDY=
+        send_resolved: true
+
+# Inhibition Rule to suppress trouble alerts when critical alerts are present
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'trouble'
+    equal:
+      - alertname
+
+
+
+# -------------------------------------------------------------
+# TIME INTERVAL DEFINITIONS (UTC)
+# IST = UTC + 5:30
+# -------------------------------------------------------------
+time_intervals:
+  # 1 business Day 2: 9:30 AM IST - 5:30 PM IST
+  # conversion: 04:00 - 12:00 UTC
+  - name: business_hours_930_530_ist
+    time_intervals:
+      - weekdays: ['monday:friday']
+        times:
+          - start_time: '04:00'
+            end_time: '12:00'
+
+  # 2 business Day 2: 10:00 AM IST - 10:00 PM IST
+  # conversion: 04:30 - 16:30 UTC
+  - name: business_hours_1000_2200_ist
+    time_intervals:
+      - weekdays: ['monday:friday']
+        times:
+          - start_time: '04:30'
+            end_time: '16:30'
+
+  # 3. Maintenance Window for Group 1: 9:36 AM IST - 5:30 PM IST
+  #    Conversion: 04:06 - 12:00 UTC
+  - name: maintenance_window_group1
+    time_intervals:
+      - weekdays: ['monday:friday']
+        times:
+          - start_time: '04:06'
+            end_time: '12:00'

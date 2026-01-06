@@ -1,0 +1,248 @@
+groups:
+
+  ## Server Status
+  - name: server_alerts
+    rules:
+#-------------------------------- Non-Production SErver - Alerts only inside the maintanence time-window ---------------------
+      - alert: NonProdServerDown_TESTING
+        expr: |
+          absent(up{job="node-linux", Type="CompanyName-NonProd"} == 1)
+          *
+          (
+            (day_of_week() >= bool 1) * (day_of_week() <= bool 5)
+            *
+            (
+              1 -
+              (
+                (hour() == bool 1)
+                * (time() % 3600 / 60 >= bool 24)
+                * (time() % 3600 / 60 < bool 30)
+              )
+            )
+          ) > 0
+        for: 10s
+        labels:
+          severity: critical
+#          priority: Critical
+          environment: nonprod
+        annotations:
+          summary: "Server {{ $labels.instance_name }} is down"
+          description: "Critical: Server {{ $labels.instance_name }} is down and not responding."
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"
+#----------------------------------- Production Server - 24X7 monitoring ---------------------------------------------------------
+      - alert: ProdServerDown_TESTING
+        expr: |
+          up{job="node-linux", Type="CompanyName-Prod"} == 0
+#         up{job="node-linux", instance_name=~"(?i).*prod.*"} == 0
+        for: 10s
+        labels:
+          severity: critical
+          environment: prod
+        annotations:
+          summary: "PRODUCTION Server {{ $labels.instance_name }} is down"
+          description: "Critical: Production server {{ $labels.instance_name }} is not responding."
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"
+#----------------------------------- Miscellaneous Servers  ---------------------------------------------------------
+#----------------------------------- Logic : Catches server with No tags and RANDOM names
+#-----------------------------------         Fires ones and stops alerting after 4 hour of downtime
+      - alert: MiscServerDown_Transient
+        expr: |
+          (
+            up{job="node-linux"} == 0
+            unless on(instance) up{job="node-linux", Type=~"CompanyName-(Prod|NonProd)"}
+          )
+          *
+          on(instance) group_left(instance_name) (
+            max_over_time(up{job="node-linux"}[1h]) == 1
+          )
+        for: 5m
+        labels:
+          severity: warning
+          environment: misc
+        annotations:
+          summary: "Miscellaneous Server {{ $labels.instance_name }} has stopped"
+          description: "Server stopped. Alert will auto-resolve after 4 hours."
+#--------------------------------------------------------------------------------------------------------------------------
+
+  ## Disk Usage
+  - name: disk_usage_alerts
+    rules:
+      - alert: DiskUsageTrouble
+        expr: ((node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs|vfat"} - node_filesystem_free_bytes)
+              / node_filesystem_size_bytes *100) >= 75
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "High disk usage on {{ $labels.instance_name }}"
+          description: "Disk usage exceeded 75%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: '{{ $labels }}'
+
+      - alert: DiskUsageCritical
+        expr: ((node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs|vfat"} - node_filesystem_free_bytes)
+              / node_filesystem_size_bytes *100) >= 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical disk usage on {{ $labels.instance_name }}"
+          description: "Disk usage exceeded 90%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: '{{ $labels }}'
+
+  ## Memory Usage
+  - name: memory_alerts
+    rules:
+      - alert: MemoryUsageCritical
+        expr: 100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) >= 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical memory usage"
+          description: "Memory usage above 90%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
+
+      - alert: MemoryUsageTrouble
+        expr: 100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) >= 70
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage above 70%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
+
+  ## Swap Memory
+  - name: swapmemory_alerts
+    rules:
+      - alert: SwapUsageCritical
+        expr: ((node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes)
+                / node_memory_SwapTotal_bytes * 100) > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical swap usage"
+          description: "Swap usage above 90%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
+
+      - alert: SwapUsageTrouble
+        expr: ((node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes)
+                / node_memory_SwapTotal_bytes * 100) > 75
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "High swap usage"
+          description: "Swap usage above 75%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
+
+  ## CPU Load - Linux
+  - name: cpu_alerts
+    rules:
+      - alert: CpuLoadCritical
+        expr: 100 - (avg by(instance_name) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical CPU load"
+          description: "CPU load above 90%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
+
+      - alert: CpuLoadTrouble
+        expr: 100 - (avg by(instance_name) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 75
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "High CPU load"
+          description: "CPU load above 75%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
+
+  ## Windows Disk
+  - name: windows_drive_disk_usage
+    rules:
+      - alert: WindowsDiskUsageTrouble
+        expr: ((windows_logical_disk_size_bytes - windows_logical_disk_free_bytes)
+                / windows_logical_disk_size_bytes * 100) >= 75
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "Windows disk usage high"
+          description: "Disk usage above 75%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: '{{ $labels }}'
+
+      - alert: WindowsDiskUsageCritical
+        expr: ((windows_logical_disk_size_bytes - windows_logical_disk_free_bytes)
+                / windows_logical_disk_size_bytes * 100) >= 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Windows disk usage critical"
+          description: "Disk usage above 90%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: '{{ $labels }}'
+
+  ## Windows Memory
+  - name: windows_memory_usage
+    rules:
+      - alert: WindowsMemoryUsageTrouble
+        expr: (100 - 100 * windows_os_physical_memory_free_bytes / windows_cs_physical_memory_bytes) >= 98
+        for: 55m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "Windows memory usage high"
+          description: "Memory usage above 75%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
+
+      - alert: WindowsMemoryUsageCritical
+        expr: (100 - 100 * windows_os_physical_memory_free_bytes / windows_cs_physical_memory_bytes) >= 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Windows memory usage critical"
+          description: "Memory usage above 90%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
+
+  ## Windows CPU
+  - name: windows_cpu_usage
+    rules:
+      - alert: WindowsCpuLoadTrouble
+        expr: 100 - (avg by(instance_name) (rate(windows_cpu_time_total{mode="idle"}[5m])) * 100) > 90
+        for: 55m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "Windows CPU high"
+          description: "CPU load above 75%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
+
+      - alert: WindowsCpuLoadCritical
+        expr: 100 - (avg by(instance_name) (rate(windows_cpu_time_total{mode="idle"}[5m])) * 100) > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Windows CPU critical"
+          description: "CPU load above 90%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
