@@ -1,0 +1,122 @@
+global:
+  scrape_interval: 1m
+  evaluation_interval: 1m
+  external_labels:
+    client: Haldia
+
+remote_write:
+- url: "http://3.111.71.74:10908/api/v1/receive"
+
+scrape_configs:
+  - job_name: "node-linux"
+    ec2_sd_configs: &ec2config
+      - region: "ap-south-1"
+        role_arn: "arn:aws:iam::627066103515:role/prometheus-monitoring-role"
+        # access_key: "______AKIAZEAANM3N3WCKGNNS"
+        # secret_key: "______LC21mtAjNpv0LwlYBw68uuHB6+HQt12QbaJxyPV/"
+    relabel_configs:
+      - source_labels: [__meta_ec2_tag_OS]
+        regex: linux
+        action: keep
+
+#---------------------------for alert generation------------------------------------------
+# 1 'EC2-start10AM' -> 'ec2_start10am'
+      - source_labels: [__meta_ec2_tag_ec2_start10am]
+        target_label: EC2_start10AM
+# 2 'EC2start' -> 'ec2start'
+      - source_labels: [__meta_ec2_tag_ec2start]
+        target_label: EC2start
+# 3 'EC2start9AM' -> 'ec2start9am'
+      - source_labels: [__meta_ec2_tag_ec2start9am]
+        target_label: EC2start9AM
+# 4 'EC2start10AM' -> 'ec2start10am'
+      - source_labels: [__meta_ec2_tag_ec2start10am]
+        target_label: EC2start10AM
+# 5 'QAEC2DBstart' -> 'qaec2dbstart'
+      - source_labels: [__meta_ec2_tag_qaec2dbstart]
+        target_label: QAEC2DBstart
+#----------------------------------------------------------------------------------
+
+      - source_labels: [__meta_ec2_private_ip]
+        regex: '(.*)'
+        replacement: '${1}:1784'
+        target_label: __address__
+      - source_labels: [__meta_ec2_tag_Name]
+        target_label: instance_name
+      - target_label: "Organisation_Id"
+        replacement: "245"
+      - target_label: "raiseOnBehalfOf"
+        replacement: "ms-monitoring@minfytech.com"
+      - target_label: "IncidentTypeIdTI"
+        replacement: "4702"
+      - target_label: "IncidentTypeIdCI"
+        replacement: "4702"
+      - target_label: "serviceRequestTypeIdCU"
+        replacement: "4702"
+      - target_label: "JiraProjectIdTI"
+        replacement: "2113"
+      - target_label: "JiraProjectIdCI"
+        replacement: "2113"
+      - target_label: "JiraProjectIdCU"
+        replacement: "2113"
+      - target_label: "projectKeyTI"
+        replacement: "AT"
+      - target_label: "projectKeyCI"
+        replacement: "AT"
+      - target_label: "ProjectKeyCU"
+        replacement: "AT"
+      - target_label: "SearchInProjects"
+        replacement: "AT"
+      - target_label: "ClientName"
+        replacement: "Haldia"
+      - target_label: "cust_email_id"
+        replacement: "raj.kumar@hpl.co.in"
+
+  - job_name: "node-windows"
+    ec2_sd_configs: *ec2config
+    relabel_configs:
+      - source_labels: [__meta_ec2_tag_OS]
+        regex: windows
+        action: keep
+      - source_labels: [__meta_ec2_private_ip]
+        regex: '(.*)'
+        replacement: '${1}:9182'
+        target_label: __address__
+      - source_labels: [__meta_ec2_tag_Name]
+        target_label: instance_name
+      - target_label: "Organisation_Id"
+        replacement: "245"
+      - target_label: "raiseOnBehalfOf"
+        replacement: "ms-monitoring@minfytech.com"
+      - target_label: "IncidentTypeIdTI"
+        replacement: "4702"
+      - target_label: "IncidentTypeIdCI"
+        replacement: "4702"
+      - target_label: "serviceRequestTypeIdCU"
+        replacement: "4702"
+      - target_label: "JiraProjectIdTI"
+        replacement: "2113"
+      - target_label: "JiraProjectIdCI"
+        replacement: "2113"
+      - target_label: "JiraProjectIdCU"
+        replacement: "2113"
+      - target_label: "projectKeyTI"
+        replacement: "AT"
+      - target_label: "projectKeyCI"
+        replacement: "AT"
+      - target_label: "ProjectKeyCU"
+        replacement: "AT"
+      - target_label: "SearchInProjects"
+        replacement: "AT"
+      - target_label: "ClientName"
+        replacement: "Haldia"
+      - target_label: "cust_email_id"
+        replacement: "raj.kumar@hpl.co.in"
+
+rule_files:
+  - "/etc/prometheus/EC2-Alerts.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+      - targets: ["172.30.15.66:9093"]
