@@ -19,23 +19,23 @@ scrape_configs:
         regex: linux
         action: keep
 
-#---------------------------for alert generation------------------------------------------
+#--------------------------- for HALDIA alert generation ------------------------------------
 # 1 'EC2-start10AM' -> 'ec2_start10am'
-      - source_labels: [__meta_ec2_tag_ec2_start10am]
+      - source_labels: [__meta_ec2_tag_EC2_start10AM]
         target_label: EC2_start10AM
 # 2 'EC2start' -> 'ec2start'
-      - source_labels: [__meta_ec2_tag_ec2start]
+      - source_labels: [__meta_ec2_tag_EC2start]
         target_label: EC2start
 # 3 'EC2start9AM' -> 'ec2start9am'
-      - source_labels: [__meta_ec2_tag_ec2start9am]
+      - source_labels: [__meta_ec2_tag_EC2start9AM]
         target_label: EC2start9AM
 # 4 'EC2start10AM' -> 'ec2start10am'
-      - source_labels: [__meta_ec2_tag_ec2start10am]
+      - source_labels: [__meta_ec2_tag_EC2start10AM]
         target_label: EC2start10AM
 # 5 'QAEC2DBstart' -> 'qaec2dbstart'
-      - source_labels: [__meta_ec2_tag_qaec2dbstart]
+      - source_labels: [__meta_ec2_tag_QAEC2DBstart]
         target_label: QAEC2DBstart
-#----------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
 
       - source_labels: [__meta_ec2_private_ip]
         regex: '(.*)'

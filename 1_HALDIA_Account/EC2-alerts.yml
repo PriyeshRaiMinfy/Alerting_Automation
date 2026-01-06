@@ -1,32 +1,9 @@
 groups:
-## Disk Usage
-  - name: disk_usage_alerts
-    rules:
-      - alert: DiskUsageTrouble
-        expr: ((node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100) >= 80
-        for: 5m
-        labels:
-          severity: trouble
-        annotations:
-          summary: "High disk usage on {{ $labels.instance_name }}since 5m"
-          description: "Trouble: Disk usage is over 80% on {{ $labels.instance_name }} since 5 minutes. Attention needed to avoid storage issues."
-          VALUE: '{{ $value }}'
-          LABELS: '{{ $labels }}'
-
-      - alert: DiskUsageCritical
-        expr: ((node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100) >= 90
-        for: 5m
-        labels:
-          severity: critical
-        annotations:
-          summary: "High disk usage on {{ $labels.instance_name }}since 5m"
-          description: "Critical: Disk usage is over 90% on {{ $labels.instance_name }} since 5 minutes. Immediate attention is needed to avoid storage issues."
-          VALUE: '{{ $value }}'
-          LABELS: '{{ $labels }}'
-
-## Server Status
+  ## Server Status
   - name: server_alerts
     rules:
+
+      # GENERIC ALERT - Fires for ANY node-linux that goes down (catches all, regardless of tags)
       # - alert: ServerDown
       #   expr: up == 0
       #   for: 5m
@@ -38,68 +15,100 @@ groups:
       #     VALUE: "{{ $value }}"
       #     LABELS: "{{ $labels }}"
 
-# -----------------------------------------------------------
-# new alert rules for scheduled ec2 instances
-# -----------------------------------------------------------
-      # 1. Alert for EC2-start10AM
+      # 1. Alert for EC2-start10AM (tag exists on pdemo-linux-server)
       - alert: ServerDown_EC2_start10AM
-        expr: up{job="node-linux", EC2_start10AM=~"yes|Yes|true|True"} == 0
-        for: 5m
+        expr: up{job="node-linux", EC2_start10AM=~"Yes|yes|True|true"} == 0
+        for: 10s
         labels:
           severity: critical
           schedule: "10AM_Start"
         annotations:
-          summary: "Scheduled Server {{ $labels.instance_name }} (10AM) is down"
-          description: "Server marked 'EC2-start10AM' is not responding."
+          summary: "Scheduled Server {{ $labels.nodename }} (10AM) is down"
+          description: "Server marked 'EC2-start10AM' is not responding. Instance: {{ $labels.instance }}"
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"
 
-      # 2. Alert for EC2start
+      # 2. Alert for EC2start (tag exists on pdemo-linux-server-2)
       - alert: ServerDown_EC2start
-        expr: up{job="node-linux", EC2start=~"yes|Yes|true|True"} == 0
-        for: 5m
+        expr: up{job="node-linux", EC2start=~"Yes|yes|True|true"} == 0
+        for: 10s
         labels:
           severity: critical
           schedule: "Generic_Start"
         annotations:
-          summary: "Scheduled Server {{ $labels.instance_name }} is down"
-          description: "Server marked 'EC2start' is not responding."
+          summary: "Scheduled Server {{ $labels.nodename }} is down"
+          description: "Server marked 'EC2start' is not responding. Instance: {{ $labels.instance }}"
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"
 
-      # 3. Alert for EC2start9AM
+      # 3. Alert for EC2start9AM (tag exists on pdemo-linux-server-3)
       - alert: ServerDown_EC2start9AM
-        expr: up{job="node-linux", EC2start9AM=~"yes|Yes|true|True"} == 0
-        for: 5m
+        expr: up{job="node-linux", EC2start9AM=~"Yes|yes|True|true"} == 0
+        for: 10s
         labels:
           severity: critical
           schedule: "9AM_Start"
         annotations:
-          summary: "Scheduled Server {{ $labels.instance_name }} (9AM) is down"
-          description: "Server marked 'EC2start9AM' is not responding."
+          summary: "Scheduled Server {{ $labels.nodename }} (9AM) is down"
+          description: "Server marked 'EC2start9AM' is not responding. Instance: {{ $labels.instance }}"
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"
 
       # 4. Alert for EC2start10AM (No Hyphen)
       - alert: ServerDown_EC2start10AM
-        expr: up{job="node-linux", EC2start10AM=~"yes|Yes|true|True"} == 0
-        for: 5m
+        expr: up{job="node-linux", EC2start10AM=~"Yes|yes|True|true"} == 0
+        for: 10s
         labels:
           severity: critical
           schedule: "10AM_Start_NoHyphen"
         annotations:
-          summary: "Scheduled Server {{ $labels.instance_name }} is down"
-          description: "Server marked 'EC2start10AM' is not responding."
+          summary: "Scheduled Server {{ $labels.nodename }} is down"
+          description: "Server marked 'EC2start10AM' is not responding. Instance: {{ $labels.instance }}"
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"
 
       # 5. Alert for QAEC2DBstart
       - alert: ServerDown_QAEC2DBstart
-        expr: up{job="node-linux", QAEC2DBstart=~"yes|Yes|true|True"} == 0
-        for: 5m
+        expr: up{job="node-linux", QAEC2DBstart=~"Yes|yes|True|true"} == 0
+        for: 10s
         labels:
           severity: critical
           schedule: "QA_DB_Start"
         annotations:
-          summary: "QA Database Server {{ $labels.instance_name }} is down"
-          description: "Server marked 'QAEC2DBstart' is not responding."
-# -----------------------------------------------------------
-# -----------------------------------------------------------
-# -----------------------------------------------------------
+          summary: "QA Database Server {{ $labels.nodename }} is down"
+          description: "Server marked 'QAEC2DBstart' is not responding. Instance: {{ $labels.instance }}"
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"
 
-## Memory Usage
+# -----------------------------------------------------------------------------------------
+  ## Disk Usage
+  - name: disk_usage_alerts
+    rules:
+      - alert: DiskUsageTrouble
+        expr: ((node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs|vfat"} - node_filesystem_free_bytes)
+              / node_filesystem_size_bytes *100) >= 75
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "High disk usage on {{ $labels.nodename }}"
+          description: "Disk usage exceeded 75% on {{ $labels.mountpoint }}."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: '{{ $labels }}'
+
+      - alert: DiskUsageCritical
+        expr: ((node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs|vfat"} - node_filesystem_free_bytes)
+              / node_filesystem_size_bytes *100) >= 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical disk usage on {{ $labels.nodename }}"
+          description: "Disk usage exceeded 90% on {{ $labels.mountpoint }}."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: '{{ $labels }}'
+
+  ## Memory Usage
   - name: memory_alerts
     rules:
       - alert: MemoryUsageCritical
@@ -108,9 +117,9 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Critical: Extremely high memory usage on {{ $labels.instance_name }}"
-          description: "Critical: Memory usage on {{ $labels.instance_name }} has exceeded 90%. Immediate action is required to prevent system instability."
-          VALUE: "{{ $value }}"
+          summary: "Critical memory usage on {{ $labels.nodename }}"
+          description: "Memory usage above 90%."
+          VALUE: '{{ printf "%.2f" $value }}%'
           LABELS: "{{ $labels }}"
 
       - alert: MemoryUsageTrouble
@@ -119,150 +128,136 @@ groups:
         labels:
           severity: trouble
         annotations:
-          summary: "Trouble: High memory usage on {{ $labels.instance_name }}"
-          description: "Trouble: Memory usage on {{ $labels.instance_name }} has exceeded 80%. Attention needed."
-          VALUE: "{{ $value }}"
+          summary: "High memory usage on {{ $labels.nodename }}"
+          description: "Memory usage above 70%."
+          VALUE: '{{ printf "%.2f" $value }}%'
           LABELS: "{{ $labels }}"
 
-
-## Swap Memory Alerts
+  ## Swap Memory
   - name: swapmemory_alerts
     rules:
       - alert: SwapUsageCritical
-        expr: (node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes) / node_memory_SwapTotal_bytes > 90
+        expr: ((node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes)
+                / node_memory_SwapTotal_bytes * 100) > 90
         for: 5m
         labels:
           severity: critical
         annotations:
-          summary: "Critical swap memory usage on {{ $labels.instance_name }}"
-          description: "Critical: Swap memory usage on {{ $labels.instance_name }} has exceeded 90%. High swap usage can lead to performance degradation. Immediate action is required."
-          VALUE: "{{ $value }}"
+          summary: "Critical swap usage on {{ $labels.nodename }}"
+          description: "Swap usage above 90%."
+          VALUE: '{{ printf "%.2f" $value }}%'
           LABELS: "{{ $labels }}"
 
       - alert: SwapUsageTrouble
-        expr: (node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes) / node_memory_SwapTotal_bytes > 80
+        expr: ((node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes)
+                / node_memory_SwapTotal_bytes * 100) > 75
         for: 5m
         labels:
           severity: trouble
         annotations:
-          summary: "Trouble: High swap memory usage on {{ $labels.instance_name }}"
-          description: "Trouble: Swap memory usage on {{ $labels.instance_name }} has exceeded 80%. High swap usage can lead to performance degradation. Attention required."
-          VALUE: "{{ $value }}"
+          summary: "High swap usage on {{ $labels.nodename }}"
+          description: "Swap usage above 75%."
+          VALUE: '{{ printf "%.2f" $value }}%'
           LABELS: "{{ $labels }}"
 
-
-## CPU Alerts
+  ## CPU Load - Linux
   - name: cpu_alerts
     rules:
       - alert: CpuLoadCritical
-        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
-        for: 5m
+        expr: 100 - (avg by(nodename) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 1m
         labels:
           severity: critical
         annotations:
-          summary: "Critical CPU load on {{ $labels.instance_name }}"
-          description: "Critical: CPU load on {{ $labels.instance_name }} has exceeded 90%. High CPU usage may lead to performance issues. Immediate action is required."
-          VALUE: "{{ $value }}"
+          summary: "Critical CPU load on {{ $labels.nodename }}"
+          description: "CPU load above 90%."
+          VALUE: '{{ printf "%.2f" $value }}%'
           LABELS: "{{ $labels }}"
 
       - alert: CpuLoadTrouble
-        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        expr: 100 - (avg by(nodename) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 75
         for: 5m
         labels:
           severity: trouble
         annotations:
-          summary: "Trouble: High CPU load on {{ $labels.instance_name }}"
-          description: "Trouble: CPU load on {{ $labels.instance_name }} has exceeded 80%. High CPU usage may lead to performance issues. Attention required."
-          VALUE: "{{ $value }}"
+          summary: "High CPU load on {{ $labels.nodename }}"
+          description: "CPU load above 75%."
+          VALUE: '{{ printf "%.2f" $value }}%'
           LABELS: "{{ $labels }}"
 
-
-################################## Windows Alerts ##############################################################
-## Windows Server Down Alert
-  - name: windows_server_down_alert
-    rules:
-      - alert: WindowsServerDown
-        expr: up{job="node-windows"} == 0
-        for: 5m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Windows Server {{ $labels.instance_name }} is down"
-          description: "Critical: Windows Server {{ $labels.instance_name }} is not responding."
-
-## DiskUsage Alert
+  ## Windows Disk
   - name: windows_drive_disk_usage
     rules:
-      - alert: DiskUsageTrouble
-        expr: ((windows_logical_disk_size_bytes - windows_logical_disk_free_bytes) / windows_logical_disk_size_bytes * 100) >= 80
+      - alert: WindowsDiskUsageTrouble
+        expr: ((windows_logical_disk_size_bytes - windows_logical_disk_free_bytes)
+                / windows_logical_disk_size_bytes * 100) >= 75
         for: 5m
         labels:
           severity: trouble
         annotations:
-          summary: "High disk usage on {{ $labels.instance_name }}"
-          description: "Trouble: Disk usage is over 80% on {{ $labels.instance_name }} since 5 minutes. Attention needed to avoid storage issues."
-          VALUE: '{{ $value }}'
+          summary: "Windows disk usage high on {{ $labels.instance_name }}"
+          description: "Disk usage above 75% on volume {{ $labels.volume }}."
+          VALUE: '{{ printf "%.2f" $value }}%'
           LABELS: '{{ $labels }}'
 
-      - alert: DiskUsageCritical
-        expr: ((windows_logical_disk_size_bytes - windows_logical_disk_free_bytes) / windows_logical_disk_size_bytes * 100) >= 90
+      - alert: WindowsDiskUsageCritical
+        expr: ((windows_logical_disk_size_bytes - windows_logical_disk_free_bytes)
+                / windows_logical_disk_size_bytes * 100) >= 90
         for: 5m
         labels:
           severity: critical
         annotations:
-          summary: "High disk usage on {{ $labels.instance_name }}"
-          description: "Critical: Disk usage is over 90% on {{ $labels.instance_name }} since 5 minutes. Immediate attention needed to avoid storage issues."
-          VALUE: '{{ $value }}'
+          summary: "Windows disk usage critical on {{ $labels.instance_name }}"
+          description: "Disk usage above 90% on volume {{ $labels.volume }}."
+          VALUE: '{{ printf "%.2f" $value }}%'
           LABELS: '{{ $labels }}'
 
-
-## MemoryUsage
-  - name:  windows_memory_usage
+  ## Windows Memory
+  - name: windows_memory_usage
     rules:
-      - alert: MemoryUsageTrouble
-        expr: (100 - 100 * windows_os_physical_memory_free_bytes / windows_cs_physical_memory_bytes) >= 80
+      - alert: WindowsMemoryUsageTrouble
+        expr: (100 - 100 * windows_os_physical_memory_free_bytes / windows_cs_physical_memory_bytes) >= 75
         for: 5m
         labels:
           severity: trouble
         annotations:
-          summary: "Trouble: High memory usage on {{ $labels.instance_name }}"
-          description: "Trouble: Memory usage on {{ $labels.instance_name }} has exceeded 80%. Attention needed."
-          VALUE: "{{ $value }}"
+          summary: "Windows memory usage high on {{ $labels.instance_name }}"
+          description: "Memory usage above 75%."
+          VALUE: '{{ printf "%.2f" $value }}%'
           LABELS: "{{ $labels }}"
 
-      - alert: MemoryUsageCritical
+      - alert: WindowsMemoryUsageCritical
         expr: (100 - 100 * windows_os_physical_memory_free_bytes / windows_cs_physical_memory_bytes) >= 90
         for: 5m
         labels:
           severity: critical
         annotations:
-          summary: "Critical: Extremely high memory usage on {{ $labels.instance_name }}"
-          description: "Critical: Memory usage on {{ $labels.instance_name }} has exceeded 90%. Immediate action is required to prevent system instability."
-          VALUE: "{{ $value }}"
+          summary: "Windows memory usage critical on {{ $labels.instance_name }}"
+          description: "Memory usage above 90%."
+          VALUE: '{{ printf "%.2f" $value }}%'
           LABELS: "{{ $labels }}"
 
-
-## CPUUsage
+  ## Windows CPU
   - name: windows_cpu_usage
     rules:
-      - alert: CpuLoadTrouble
-        expr: 100 - (avg by (instance_name) (rate(windows_cpu_time_total{mode="idle"}[5m])) * 100) > 80
+      - alert: WindowsCpuLoadTrouble
+        expr: 100 - (avg by(instance_name) (rate(windows_cpu_time_total{mode="idle"}[5m])) * 100) > 75
         for: 5m
         labels:
           severity: trouble
         annotations:
-          summary: "Trouble: High CPU load on {{ $labels.instance_name }}"
-          description: "Trouble: CPU load on {{ $labels.instance_name }} has exceeded 80%. High CPU usage may lead to performance issues. Attention required."
-          VALUE: "{{ $value }}"
+          summary: "Windows CPU high on {{ $labels.instance_name }}"
+          description: "CPU load above 75%."
+          VALUE: '{{ printf "%.2f" $value }}%'
           LABELS: "{{ $labels }}"
 
-      - alert: CpuLoadCritical
-        expr: 100 - (avg by (instance_name) (rate(windows_cpu_time_total{mode="idle"}[5m])) * 100) > 90
+      - alert: WindowsCpuLoadCritical
+        expr: 100 - (avg by(instance_name) (rate(windows_cpu_time_total{mode="idle"}[5m])) * 100) > 90
         for: 5m
         labels:
-          severity: trouble
+          severity: critical
         annotations:
-          summary: "Critical CPU load on {{ $labels.instance_name }}"
-          description: "Critical: CPU load on {{ $labels.instance_name }} has exceeded 90%. High CPU usage may lead to performance issues. Immediate action is required."
-          VALUE: "{{ $value }}"
+          summary: "Windows CPU critical on {{ $labels.instance_name }}"
+          description: "CPU load above 90%."
+          VALUE: '{{ printf "%.2f" $value }}%'
           LABELS: "{{ $labels }}"
