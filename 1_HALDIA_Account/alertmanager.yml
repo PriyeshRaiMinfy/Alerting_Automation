@@ -9,8 +9,6 @@ route:
   routes:
     # -----------------------------------------------------------
     # 1. SERVER GROUP: EC2-start10AM
-    #    Uses: business_hours_group1
-    #    Mute: maintenance_window_group1
     # -----------------------------------------------------------
     - match:
         schedule: '10AM_Start'
@@ -19,20 +17,16 @@ route:
         - business_hours_group1
       mute_time_intervals:
         - maintenance_window_group1
-
     # -----------------------------------------------------------
     # 2. SERVER GROUP: EC2start
-    #    Uses: business_hours_group2
     # -----------------------------------------------------------
     - match:
         schedule: 'Generic_Start'
       receiver: 'Haldia'
       active_time_intervals:
         - business_hours_group2
-
     # -----------------------------------------------------------
     # 3. SERVER GROUP: EC2start9AM
-    #    Uses: business_hours_group3
     # -----------------------------------------------------------
     - match:
         schedule: '9AM_Start'

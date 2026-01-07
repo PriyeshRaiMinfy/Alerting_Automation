@@ -1,103 +1,196 @@
-global:
-  scrape_interval: 1m
-  evaluation_interval: 1m
-  external_labels:
-    client: Haldia
+groups:
+## Disk Usage
+  - name: disk_usage_alerts
+    rules:
+      - alert: DiskUsageTrouble
+        expr: ((node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100) >= 80
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "High disk usage on {{ $labels.instance_name }}since 5m"
+          description: "Trouble: Disk usage is over 80% on {{ $labels.instance_name }} since 5 minutes. Attention needed to avoid storage issues."
+          VALUE: '{{ $value }}'
+          LABELS: '{{ $labels }}'
 
-remote_write:
-- url: "http://3.111.71.74:10908/api/v1/receive"
+      - alert: DiskUsageCritical
+        expr: ((node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100) >= 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High disk usage on {{ $labels.instance_name }}since 5m"
+          description: "Critical: Disk usage is over 90% on {{ $labels.instance_name }} since 5 minutes. Immediate attention is needed to avoid storage issues."
+          VALUE: '{{ $value }}'
+          LABELS: '{{ $labels }}'
 
-scrape_configs:
-  - job_name: "node-linux"
-    ec2_sd_configs: &ec2config
-      - region: "ap-south-1"
-        role_arn: "arn:aws:iam::627066103515:role/prometheus-monitoring-role"
-        # access_key: "_______AKIAZEAANM3N3WCKGNNS"
-        # secret_key: "_______LC21mtAjNpv0LwlYBw68uuHB6+HQt12QbaJxyPV/"
-    relabel_configs:
-      - source_labels: [__meta_ec2_tag_OS]
-        regex: linux
-        action: keep
-      - source_labels: [__meta_ec2_private_ip]
-        regex: '(.*)'
-        replacement: '${1}:1784'
-        target_label: __address__
-      - source_labels: [__meta_ec2_tag_Name]
-        target_label: instance_name
-      - target_label: "Organisation_Id"
-        replacement: "245"
-      - target_label: "raiseOnBehalfOf"
-        replacement: "ms-monitoring@minfytech.com"
-      - target_label: "IncidentTypeIdTI"
-        replacement: "4702"
-      - target_label: "IncidentTypeIdCI"
-        replacement: "4702"
-      - target_label: "serviceRequestTypeIdCU"
-        replacement: "4702"
-      - target_label: "JiraProjectIdTI"
-        replacement: "2113"
-      - target_label: "JiraProjectIdCI"
-        replacement: "2113"
-      - target_label: "JiraProjectIdCU"
-        replacement: "2113"
-      - target_label: "projectKeyTI"
-        replacement: "AT"
-      - target_label: "projectKeyCI"
-        replacement: "AT"
-      - target_label: "ProjectKeyCU"
-        replacement: "AT"
-      - target_label: "SearchInProjects"
-        replacement: "AT"
-      - target_label: "ClientName"
-        replacement: "Haldia"
-      - target_label: "cust_email_id"
-        replacement: "raj.kumar@hpl.co.in"
+## Server Status
+  - name: server_alerts
+    rules:
+      - alert: ServerDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Server {{ $labels.instance_name }} is down"
+          description: "Critical: Server {{ $labels.instance_name }} is down. The server is not responding for the past 5 minutes."
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"
 
-  - job_name: "node-windows"
-    ec2_sd_configs: *ec2config
-    relabel_configs:
-      - source_labels: [__meta_ec2_tag_OS]
-        regex: windows
-        action: keep
-      - source_labels: [__meta_ec2_private_ip]
-        regex: '(.*)'
-        replacement: '${1}:9182'
-        target_label: __address__
-      - source_labels: [__meta_ec2_tag_Name]
-        target_label: instance_name
-      - target_label: "Organisation_Id"
-        replacement: "245"
-      - target_label: "raiseOnBehalfOf"
-        replacement: "ms-monitoring@minfytech.com"
-      - target_label: "IncidentTypeIdTI"
-        replacement: "4702"
-      - target_label: "IncidentTypeIdCI"
-        replacement: "4702"
-      - target_label: "serviceRequestTypeIdCU"
-        replacement: "4702"
-      - target_label: "JiraProjectIdTI"
-        replacement: "2113"
-      - target_label: "JiraProjectIdCI"
-        replacement: "2113"
-      - target_label: "JiraProjectIdCU"
-        replacement: "2113"
-      - target_label: "projectKeyTI"
-        replacement: "AT"
-      - target_label: "projectKeyCI"
-        replacement: "AT"
-      - target_label: "ProjectKeyCU"
-        replacement: "AT"
-      - target_label: "SearchInProjects"
-        replacement: "AT"
-      - target_label: "ClientName"
-        replacement: "Haldia"
-      - target_label: "cust_email_id"
-        replacement: "raj.kumar@hpl.co.in"
 
-rule_files:
-  - "/etc/prometheus/EC2-Alerts.yml"
+## Memory Usage
+  - name: memory_alerts
+    rules:
+      - alert: MemoryUsageCritical
+        expr: 100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) >= 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical: Extremely high memory usage on {{ $labels.instance_name }}"
+          description: "Critical: Memory usage on {{ $labels.instance_name }} has exceeded 90%. Immediate action is required to prevent system instability."
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"
 
-alerting:
-  alertmanagers:
-    - static_configs:
-      - targets: ["172.30.15.66:9093"]
+      - alert: MemoryUsageTrouble
+        expr: 100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) >= 70
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "Trouble: High memory usage on {{ $labels.instance_name }}"
+          description: "Trouble: Memory usage on {{ $labels.instance_name }} has exceeded 80%. Attention needed."
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"
+
+
+## Swap Memory Alerts
+  - name: swapmemory_alerts
+    rules:
+      - alert: SwapUsageCritical
+        expr: (node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes) / node_memory_SwapTotal_bytes > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical swap memory usage on {{ $labels.instance_name }}"
+          description: "Critical: Swap memory usage on {{ $labels.instance_name }} has exceeded 90%. High swap usage can lead to performance degradation. Immediate action is required."
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"
+
+      - alert: SwapUsageTrouble
+        expr: (node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes) / node_memory_SwapTotal_bytes > 80
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "Trouble: High swap memory usage on {{ $labels.instance_name }}"
+          description: "Trouble: Swap memory usage on {{ $labels.instance_name }} has exceeded 80%. High swap usage can lead to performance degradation. Attention required."
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"
+
+
+## CPU Alerts
+  - name: cpu_alerts
+    rules:
+      - alert: CpuLoadCritical
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical CPU load on {{ $labels.instance_name }}"
+          description: "Critical: CPU load on {{ $labels.instance_name }} has exceeded 90%. High CPU usage may lead to performance issues. Immediate action is required."
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"
+
+      - alert: CpuLoadTrouble
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "Trouble: High CPU load on {{ $labels.instance_name }}"
+          description: "Trouble: CPU load on {{ $labels.instance_name }} has exceeded 80%. High CPU usage may lead to performance issues. Attention required."
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"
+
+
+################################## Windows Alerts ##############################################################
+## DiskUsage Alert
+  - name: windows_drive_disk_usage
+    rules:
+      - alert: DiskUsageTrouble
+        expr: ((windows_logical_disk_size_bytes - windows_logical_disk_free_bytes) / windows_logical_disk_size_bytes * 100) >= 80
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "High disk usage on {{ $labels.instance_name }}"
+          description: "Trouble: Disk usage is over 80% on {{ $labels.instance_name }} since 5 minutes. Attention needed to avoid storage issues."
+          VALUE: '{{ $value }}'
+          LABELS: '{{ $labels }}'
+
+      - alert: DiskUsageCritical
+        expr: ((windows_logical_disk_size_bytes - windows_logical_disk_free_bytes) / windows_logical_disk_size_bytes * 100) >= 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High disk usage on {{ $labels.instance_name }}"
+          description: "Critical: Disk usage is over 90% on {{ $labels.instance_name }} since 5 minutes. Immediate attention needed to avoid storage issues."
+          VALUE: '{{ $value }}'
+          LABELS: '{{ $labels }}'
+
+
+## MemoryUsage
+  - name:  windows_memory_usage
+    rules:
+      - alert: MemoryUsageTrouble
+        expr: (100 - 100 * windows_os_physical_memory_free_bytes / windows_cs_physical_memory_bytes) >= 80
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "Trouble: High memory usage on {{ $labels.instance_name }}"
+          description: "Trouble: Memory usage on {{ $labels.instance_name }} has exceeded 80%. Attention needed."
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"
+
+      - alert: MemoryUsageCritical
+        expr: (100 - 100 * windows_os_physical_memory_free_bytes / windows_cs_physical_memory_bytes) >= 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical: Extremely high memory usage on {{ $labels.instance_name }}"
+          description: "Critical: Memory usage on {{ $labels.instance_name }} has exceeded 90%. Immediate action is required to prevent system instability."
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"
+
+
+## CPUUsage
+  - name: windows_cpu_usage
+    rules:
+      - alert: CpuLoadTrouble
+        expr: 100 - (avg by (instance_name) (rate(windows_cpu_time_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "Trouble: High CPU load on {{ $labels.instance_name }}"
+          description: "Trouble: CPU load on {{ $labels.instance_name }} has exceeded 80%. High CPU usage may lead to performance issues. Attention required."
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"
+
+      - alert: CpuLoadCritical
+        expr: 100 - (avg by (instance_name) (rate(windows_cpu_time_total{mode="idle"}[5m])) * 100) > 90
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "Critical CPU load on {{ $labels.instance_name }}"
+          description: "Critical: CPU load on {{ $labels.instance_name }} has exceeded 90%. High CPU usage may lead to performance issues. Immediate action is required."
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"

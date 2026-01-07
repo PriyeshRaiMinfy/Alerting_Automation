@@ -1,0 +1,82 @@
+# RDS-alerts.yml
+# I have replicated your 5 EC2 rules but targeted them for RDS.
+
+# Metric Used: I used mysql_up as an example. Replace this with pg_up (Postgres) or mssql_up (SQL Server) or rds_up depending on what database exporter you are using.
+
+# Tags: I assumed you are using the exact same tags as defined in your CSV (EC2-start10AM, EC2start, etc.).
+# pg_up is for PostgreSQL
+# mssql_up is for SQL Server
+# rds_up is for AWS RDS instances (if using CloudWatch exporter)
+
+groups:
+  - name: rds_status_alerts
+    rules:
+      # =================================================================
+      # 1. RDS
+      - alert: RDSDown_Start10AM
+        # Replace 'mysql_up' with your actual RDS metric (e.g., pg_up, up)
+        expr: mysql_up{EC2_start10AM=~"Yes|yes|True|true"} == 0
+        for: 10s
+        labels:
+          severity: critical
+          service: rds
+          schedule: "10AM_Start"
+        annotations:
+          summary: "RDS Instance {{ $labels.instance }} Down"
+          description: "Scheduled RDS (10AM Start) is not reachable."
+
+      # =================================================================
+      # 2. RDS 
+      - alert: RDSDown_GenericStart
+        expr: mysql_up{EC2start=~"Yes|yes|True|true"} == 0
+        for: 10s
+        labels:
+          severity: critical
+          service: rds
+          schedule: "Generic_Start"
+        annotations:
+          summary: "RDS Instance {{ $labels.instance }} Down"
+          description: "Scheduled RDS (Generic Start) is not reachable."
+
+      # =================================================================
+      # 3. RDS 
+      - alert: RDSDown_Start9AM
+        expr: mysql_up{EC2start9AM=~"Yes|yes|True|true"} == 0
+        for: 10s
+        labels:
+          severity: critical
+          service: rds
+          schedule: "9AM_Start"
+        annotations:
+          summary: "RDS Instance {{ $labels.instance }} Down"
+          description: "Scheduled RDS (9AM Start) is not reachable."
+
+      # =================================================================
+      # 4. RDS - Start 10AM Extended Policy (10AM - 10PM)
+      # Matches CSV Tag: EC2start10AM
+      # =================================================================
+      - alert: RDSDown_Start10AM_Extended
+        expr: mysql_up{EC2start10AM=~"Yes|yes|True|true"} == 0
+        for: 10s
+        labels:
+          severity: critical
+          service: rds
+          schedule: "10AM_Start_NoHyphen"
+        annotations:
+          summary: "RDS Instance {{ $labels.instance }} Down"
+          description: "Scheduled RDS (10AM-10PM) is not reachable."
+
+      # =================================================================
+      # 5. RDS - QA DB Policy (Full Business Day)
+      # Matches CSV Tag: QAEC2DBstart
+      # =================================================================
+      - alert: RDSDown_QA_DB
+        expr: mysql_up{QAEC2DBstart=~"Yes|yes|True|true"} == 0
+        for: 10s
+        labels:
+          severity: critical
+          service: rds
+          schedule: "QA_DB_Start"
+        annotations:
+          summary: "QA RDS Database {{ $labels.instance }} Down"
+          description: "QA DB marked 'QAEC2DBstart' is not reachable."

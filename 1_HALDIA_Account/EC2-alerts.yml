@@ -15,7 +15,7 @@ groups:
       #     VALUE: "{{ $value }}"
       #     LABELS: "{{ $labels }}"
 
-      # 1. Alert for EC2-start10AM (tag exists on pdemo-linux-server)
+      # 1. Alert for EC2-start10AM
       - alert: ServerDown_EC2_start10AM
         expr: up{job="node-linux", EC2_start10AM=~"Yes|yes|True|true"} == 0
         for: 10s
@@ -28,7 +28,7 @@ groups:
           VALUE: "{{ $value }}"
           LABELS: "{{ $labels }}"
 
-      # 2. Alert for EC2start (tag exists on pdemo-linux-server-2)
+      # 2. Alert for EC2start
       - alert: ServerDown_EC2start
         expr: up{job="node-linux", EC2start=~"Yes|yes|True|true"} == 0
         for: 10s
