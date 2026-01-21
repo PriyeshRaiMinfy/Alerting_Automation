@@ -3,14 +3,13 @@
 
 bash
 
-''' 
+```
 cd /tmp
 wget https://github.com/ncabatoff/process-exporter/releases/download/v0.7.10/process-exporter-0.7.10.linux-amd64.tar.gz
 tar xzf process-exporter-0.7.10.linux-amd64.tar.gz
 sudo mv process-exporter-0.7.10.linux-amd64/process-exporter /usr/local/bin/
 sudo chmod +x /usr/local/bin/process-exporter
-
-'''
+```
 
 
 ## Step 8: Configuration
