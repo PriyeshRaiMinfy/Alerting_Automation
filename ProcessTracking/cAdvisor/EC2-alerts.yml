@@ -1,0 +1,255 @@
+groups:
+  ## Server Status & Process Alerts
+  - name: server_alerts
+    rules:
+
+      # -------------------------------- Non-Production Server --------------------------------
+      - alert: NonProdServerDown_TESTING
+        expr: up{job="node-linux", Type="CompanyName-NonProd"} == 0
+        for: 10s
+        labels:
+          severity: critical
+          environment: nonprod
+        annotations:
+          summary: "Server {{ $labels.instance_name }} is down"
+          description: "Critical: Server {{ $labels.instance_name }} is down and not responding."
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"
+
+      # -------------------------------- Production Server --------------------------------
+      - alert: ProdServerDown_TESTING
+        expr: up{job="node-linux", Type="CompanyName-Prod"} == 0
+        for: 10s
+        labels:
+          severity: critical
+          environment: prod
+        annotations:
+          summary: "PRODUCTION Server {{ $labels.instance_name }} is down"
+          description: "Critical: Production server {{ $labels.instance_name }} is not responding."
+          VALUE: "{{ $value }}"
+          LABELS: "{{ $labels }}"
+
+  ## Disk Usage
+  - name: disk_usage_alerts
+    rules:
+      - alert: DiskUsageTrouble
+        expr: ((node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs|vfat"} - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100) >= 75
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "High disk usage on {{ $labels.instance_name }}"
+          description: "Disk usage exceeded 75%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: '{{ $labels }}'
+
+      - alert: DiskUsageCritical
+        expr: ((node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs|vfat"} - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100) >= 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical disk usage on {{ $labels.instance_name }}"
+          description: "Disk usage exceeded 90%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: '{{ $labels }}'
+
+  ## Memory Usage
+  - name: memory_alerts
+    rules:
+      - alert: MemoryUsageCritical
+        expr: 100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) >= 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical memory usage"
+          description: "Memory usage above 90%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
+
+      - alert: MemoryUsageTrouble
+        expr: 100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) >= 70
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage above 70%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
+
+  ## Swap Memory
+  - name: swapmemory_alerts
+    rules:
+      - alert: SwapUsageCritical
+        expr: ((node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes) / node_memory_SwapTotal_bytes * 100) > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical swap usage"
+          description: "Swap usage above 90%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
+
+      - alert: SwapUsageTrouble
+        expr: ((node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes) / node_memory_SwapTotal_bytes * 100) > 75
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "High swap usage"
+          description: "Swap usage above 75%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
+
+  ## CPU Load - Linux
+  - name: cpu_alerts
+    rules:
+      - alert: CpuLoadCritical
+        expr: 100 - (avg by(instance_name) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical CPU load"
+          description: "CPU load above 90%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
+
+      - alert: CpuLoadTrouble
+        expr: 100 - (avg by(instance_name) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 75
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "High CPU load"
+          description: "CPU load above 75%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
+          
+      # -------------------------------- process exporter - CPU usage alerts --------------------------------
+      # Systemd Python Worker
+      - alert: Python_SystemdProcess_CPULoadCritical
+        #expr: 100 * sum by (nodename) (rate(namedprocess_namegroup_cpu_seconds_total{groupname="python_worker"}[1m]) / on (nodename) group_left count by (nodename) (node_cpu_seconds_total{job="node-linux"}) > 50
+        expr: 100 * sum by (nodename) (rate(namedprocess_namegroup_cpu_seconds_total{groupname="python_worker"}[1m])) / on (nodename) group_left count by (nodename) (node_cpu_seconds_total{mode="idle", job="node-linux"}) > 40
+        for: 10s
+        labels:
+          severity: critical
+        annotations:
+          summary: " Python Worker HIGH CP utilisation on {{ $labels.nodename }}"
+          description: "Using {{ printf \"%.1f\" $value }}% CPU for 2+ minutes"
+
+      # Systemd Java worker
+      - alert: Java_SystemdProcess_CPULoadTrouble
+        #expr: 100 * rate(namedprocess_namegroup_cpu_seconds_total{job="process-exporter",groupname="java_billing",mode="user"}[10s]) / on(nodename) count(node_cpu_seconds_total{job="node-linux"}) > 25
+        expr: 100 * sum by (nodename) (rate(namedprocess_namegroup_cpu_seconds_total{groupname="java_billing"}[1m])) / on (nodename) group_left count by (nodename) (node_cpu_seconds_total{mode="idle", job="node-linux"}) > 25
+        for: 10s
+        labels:
+          severity: trouble
+        annotations:
+          summary: "Java Worker HIGH CPU utilisation on {{ $labels.nodename }}"
+          description: "Using {{ printf \"%.1f\" $value }}% CPU"
+# ------------------------------------------------------------------------------------------
+# ------------------------------------------- cAdvisor - CPU usage alerts ------------------
+      # Python Worker (Docker)
+      - alert: Python_DockerProcess_CPULoadCritical
+        expr: sum by (instance_name) (rate(container_cpu_usage_seconds_total{name="demo-python-app"}[1m])) * 100 > 40
+        for: 10s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Python Worker (Docker) HIGH CPU on {{ $labels.instance_name }}"
+          description: "Container is using {{ printf \"%.1f\" $value }}% CPU."
+
+      # Java Worker (Docker)
+      - alert: Java_DockerProcess_CPULoadTrouble
+        expr: sum by (instance_name) (rate(container_cpu_usage_seconds_total{name="demo-java-app"}[1m])) * 100 > 25
+        for: 10s
+        labels:
+          severity: trouble
+        annotations:
+          summary: "Java Worker (Docker) HIGH CPU on {{ $labels.instance_name }}"
+          description: "Container is using {{ printf \"%.1f\" $value }}% CPU."
+# -------------------------------------------------------------------------------------------
+
+  ## Windows Disk
+  - name: windows_drive_disk_usage
+    rules:
+      - alert: WindowsDiskUsageTrouble
+        expr: ((windows_logical_disk_size_bytes - windows_logical_disk_free_bytes) / windows_logical_disk_size_bytes * 100) >= 75
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "Windows disk usage high"
+          description: "Disk usage above 75%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: '{{ $labels }}'
+
+      - alert: WindowsDiskUsageCritical
+        expr: ((windows_logical_disk_size_bytes - windows_logical_disk_free_bytes) / windows_logical_disk_size_bytes * 100) >= 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Windows disk usage critical"
+          description: "Disk usage above 90%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: '{{ $labels }}'
+
+  ## Windows Memory
+  - name: windows_memory_usage
+    rules:
+      - alert: WindowsMemoryUsageTrouble
+        expr: (100 - 100 * windows_os_physical_memory_free_bytes / windows_cs_physical_memory_bytes) >= 98
+        for: 55m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "Windows memory usage high"
+          description: "Memory usage above 75%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
+
+      - alert: WindowsMemoryUsageCritical
+        expr: (100 - 100 * windows_os_physical_memory_free_bytes / windows_cs_physical_memory_bytes) >= 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Windows memory usage critical"
+          description: "Memory usage above 90%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
+
+  ## Windows CPU
+  - name: windows_cpu_usage
+    rules:
+      - alert: WindowsCpuLoadTrouble
+        expr: 100 - (avg by(instance_name) (rate(windows_cpu_time_total{mode="idle"}[5m])) * 100) > 90
+        for: 55m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "Windows CPU high"
+          description: "CPU load above 75%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
+
+      - alert: WindowsCpuLoadCritical
+        expr: 100 - (avg by(instance_name) (rate(windows_cpu_time_total{mode="idle"}[5m])) * 100) > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Windows CPU critical"
+          description: "CPU load above 90%."
+          VALUE: '{{ printf "%.2f" $value }}%'
+          LABELS: "{{ $labels }}"
+
+
+
+
+          
