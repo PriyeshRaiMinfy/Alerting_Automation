@@ -1,0 +1,20 @@
+process_names:
+  - name: "{{.Comm}}"
+    cmdline:
+    - '.+'
+
+# process_names:
+#   - name: "Application_Service_A"
+#     cmdline:
+#     - 'java -jar /opt/apps/service-a.jar'
+#   - name: "Application_Service_B"
+#     cmdline:
+#     - 'python3 /opt/apps/service-b.py'
+
+#   - name: "{{.Comm}}"
+#     cmdline:
+#     - 'sshd'              # SSH Access
+#     - 'amazon-ssm-agent' 
+#     - 'rsyslogd'          # System Logging
+#     - 'dockerd'          
+

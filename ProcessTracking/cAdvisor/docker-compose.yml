@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # ------------------------------------
+  # 1. Your Python Workload
+  python-worker:
+    build: ./python-app
+    container_name: demo-python-app
+    restart: always
+
+  # ------------------------------------
+  # 2. Your Java Workload
+  java-worker:
+    build: ./java-app
+    container_name: demo-java-app
+    restart: always
+
+  # ------------------------------------
+  # 3. Process Exporter (Monitors Host OS - sshd, dockerd, etc.)
+  process-exporter:
+    image: ncabatoff/process-exporter
+    container_name: processexporter
+    # CRITICAL: This allows the container to see the HOST's Process IDs
+    pid: "host"
+    # CRITICAL: This allows the container to read the HOST's file system metrics
+    volumes:
+      - /proc:/host/proc:ro
+      - ./processes.yml:/config/processes.yml:ro
+    command:
+      - --procfs=/host/proc
+      - --config.path=/config/processes.yml
+    ports:
+      - "9256:9256"
+    # TYPO FIXED: Changed 'alway' to 'always'
+    restart: always
+
+  # ------------------------------------
+  # 4. The Monitor (cAdvisor - Monitors Docker Containers)
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    # "Magic Configuration" for Host Access
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true

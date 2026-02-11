@@ -131,47 +131,49 @@ groups:
           
       # -------------------------------- process exporter - CPU usage alerts --------------------------------
       # Systemd Python Worker
-      - alert: Python_SystemdProcess_CPULoadCritical
+      # - alert: Python_SystemdProcess_CPULoadCritical
+      - alert: SystemdProcess_CPULoadCritical
         #expr: 100 * sum by (nodename) (rate(namedprocess_namegroup_cpu_seconds_total{groupname="python_worker"}[1m]) / on (nodename) group_left count by (nodename) (node_cpu_seconds_total{job="node-linux"}) > 50
-        expr: 100 * sum by (nodename) (rate(namedprocess_namegroup_cpu_seconds_total{groupname="python_worker"}[1m])) / on (nodename) group_left count by (nodename) (node_cpu_seconds_total{mode="idle", job="node-linux"}) > 40
+        expr: 100 * sum by (nodename, groupname) (rate(namedprocess_namegroup_cpu_seconds_total[1m])) / on (nodename) group_left count by (nodename) (node_cpu_seconds_total{mode="idle", job="node-linux"}) > 40
         for: 10s
         labels:
           severity: critical
         annotations:
-          summary: " Python Worker HIGH CP utilisation on {{ $labels.nodename }}"
-          description: "Using {{ printf \"%.1f\" $value }}% CPU for 2+ minutes"
+          summary: "{{ $labels.groupname }} is causing HIGH CPU utilisation on {{ $labels.nodename }}"
+          description: "{{ $labels.groupname }} is using {{ printf \"%.1f\" $value }}% CPU"
 
-      # Systemd Java worker
-      - alert: Java_SystemdProcess_CPULoadTrouble
-        #expr: 100 * rate(namedprocess_namegroup_cpu_seconds_total{job="process-exporter",groupname="java_billing",mode="user"}[10s]) / on(nodename) count(node_cpu_seconds_total{job="node-linux"}) > 25
-        expr: 100 * sum by (nodename) (rate(namedprocess_namegroup_cpu_seconds_total{groupname="java_billing"}[1m])) / on (nodename) group_left count by (nodename) (node_cpu_seconds_total{mode="idle", job="node-linux"}) > 25
-        for: 10s
-        labels:
-          severity: trouble
-        annotations:
-          summary: "Java Worker HIGH CPU utilisation on {{ $labels.nodename }}"
-          description: "Using {{ printf \"%.1f\" $value }}% CPU"
+      # # Systemd Java worker
+      # - alert: Java_SystemdProcess_CPULoadTrouble
+      #   #expr: 100 * rate(namedprocess_namegroup_cpu_seconds_total{job="process-exporter",groupname="java_billing",mode="user"}[10s]) / on(nodename) count(node_cpu_seconds_total{job="node-linux"}) > 25
+      #   expr: 100 * sum by (nodename) (rate(namedprocess_namegroup_cpu_seconds_total{groupname="java_billing"}[1m])) / on (nodename) group_left count by (nodename) (node_cpu_seconds_total{mode="idle", job="node-linux"}) > 25
+      #   for: 10s
+      #   labels:
+      #     severity: trouble
+      #   annotations:
+      #     summary: "Java Worker HIGH CPU utilisation on {{ $labels.nodename }}"
+      #     description: "Using {{ printf \"%.1f\" $value }}% CPU"
 # ------------------------------------------------------------------------------------------
 # ------------------------------------------- cAdvisor - CPU usage alerts ------------------
       # Python Worker (Docker)
       - alert: Python_DockerProcess_CPULoadCritical
-        expr: sum by (instance_name) (rate(container_cpu_usage_seconds_total{name="demo-python-app"}[1m])) * 100 > 40
+        # expr: sum by (instance_name) (rate(container_cpu_usage_seconds_total{name="demo-python-app"}[1m])) * 100 > 40
+        expr: sum by (instance_name, name) (rate(container_cpu_usage_seconds_total{name!~"|/|cadvisor|processexporter"}[1m])) * 100 > 0
         for: 10s
         labels:
           severity: critical
         annotations:
-          summary: "Python Worker (Docker) HIGH CPU on {{ $labels.instance_name }}"
-          description: "Container is using {{ printf \"%.1f\" $value }}% CPU."
+          summary: "{{ $labels.name }} is causing HIGH CPU usage on {{ $labels.instance_name }}"
+          description: "Container {{ $labels.name }} is using {{ printf \"%.1f\" $value }}% CPU."
 
-      # Java Worker (Docker)
-      - alert: Java_DockerProcess_CPULoadTrouble
-        expr: sum by (instance_name) (rate(container_cpu_usage_seconds_total{name="demo-java-app"}[1m])) * 100 > 25
-        for: 10s
-        labels:
-          severity: trouble
-        annotations:
-          summary: "Java Worker (Docker) HIGH CPU on {{ $labels.instance_name }}"
-          description: "Container is using {{ printf \"%.1f\" $value }}% CPU."
+      # # Java Worker (Docker)
+      # - alert: Java_DockerProcess_CPULoadTrouble
+      #   expr: sum by (instance_name) (rate(container_cpu_usage_seconds_total{name="demo-java-app"}[1m])) * 100 > 25
+      #   for: 10s
+      #   labels:
+      #     severity: trouble
+      #   annotations:
+      #     summary: "Java Worker (Docker) HIGH CPU on {{ $labels.instance_name }}"
+      #     description: "Container is using {{ printf \"%.1f\" $value }}% CPU."
 # -------------------------------------------------------------------------------------------
 
   ## Windows Disk
@@ -248,8 +250,3 @@ groups:
           description: "CPU load above 90%."
           VALUE: '{{ printf "%.2f" $value }}%'
           LABELS: "{{ $labels }}"
-
-
-
-
-          
