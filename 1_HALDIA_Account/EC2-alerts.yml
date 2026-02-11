@@ -5,7 +5,7 @@ groups:
 
       # GENERIC ALERT - Fires for ANY node-linux that goes down (catches all, regardless of tags)
       # - alert: ServerDown
-      #   expr: up == 0
+      #   expr: up {job="node-linux", EC2_start10AM!~".+", EC2start!~".+", EC2start9AM!~".+", EC2start10AM!~".+", QAEC2DBstart!~".+"} == 0
       #   for: 5m
       #   labels:
       #     severity: critical

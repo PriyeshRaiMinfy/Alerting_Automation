@@ -15,8 +15,8 @@ route:
       receiver: 'Haldia'
       active_time_intervals:
         - business_hours_group1
-      mute_time_intervals:
-        - maintenance_window_group1
+      # mute_time_intervals:
+      #   - maintenance_window_group1
     # -----------------------------------------------------------
     # 2. SERVER GROUP: EC2start
     # -----------------------------------------------------------
@@ -168,63 +168,63 @@ inhibit_rules:
 # ---------------------------------------------------
 time_intervals:
   # -------------------------------------------------------
-  # GROUP 1: EC2-start10AM
-  # Mon-Fri 09:30-17:30 IST => 04:00-12:00 UTC
+  # GROUP 1: EC2-start10AM - EC2-stop9PM
+  # Mon-Fri 09:37-17:30 IST => 04:07-12:00 UTC
   # -------------------------------------------------------
   - name: business_hours_group1
     time_intervals:
       - weekdays: ['monday:friday']
         times:
-          - start_time: '04:00'
+          - start_time: '04:07'
             end_time: '12:00'
 
-  - name: maintenance_window_group1
-    time_intervals:
-      - weekdays: ['monday:friday']
-        times:
-          - start_time: '04:06'
-            end_time: '11:00'
+  # - name: maintenance_window_group1
+  #   time_intervals:
+  #     - weekdays: ['monday:friday']
+  #       times:
+  #         - start_time: '04:06'
+  #           end_time: '11:00'
 
   # -------------------------------------------------------
-  # GROUP 2: EC2start
-  # Mon-Fri 09:30-17:30 IST => 04:00-12:00 UTC
+  # GROUP 2: EC2start - EC2stop
+  # Mon-Fri 09:37-17:30 IST => 04:07-12:00 UTC
   # -------------------------------------------------------
   - name: business_hours_group2
     time_intervals:
       - weekdays: ['monday:friday']
         times:
-          - start_time: '04:00'
+          - start_time: '04:07'
             end_time: '12:00'
 
   # -------------------------------------------------------
-  # GROUP 3: EC2start9AM
-  # Mon-Fri 09:30-17:30 IST => 04:00-12:00 UTC
+  # GROUP 3: EC2start9AM - EC2stop11PM
+  # Mon-Fri 09:07-23:00 IST => 03:36-17:30 UTC
   # -------------------------------------------------------
   - name: business_hours_group3
     time_intervals:
-      - weekdays: ['monday:friday']
+      - weekdays: ['monday:saturday']
         times:
-          - start_time: '04:00'
-            end_time: '12:00'
+          - start_time: '03:37'
+            end_time: '17:30'
 
   # -------------------------------------------------------
-  # GROUP 4: EC2start10AM (Longer Duration)
-  # Mon-Fri 10:00-22:00 IST => 04:30-16:30 UTC
+  # GROUP 4: EC2start10AM - EC2stop10PM
+  # Mon-Fri 10:07-22:00 IST => 04:37-16:30 UTC
   # -------------------------------------------------------
   - name: business_hours_group4
     time_intervals:
-      - weekdays: ['monday:friday']
+      - weekdays: ['monday:saturday']
         times:
-          - start_time: '04:30'
+          - start_time: '04:37'
             end_time: '16:30'
 
   # -------------------------------------------------------
-  # GROUP 5: QAEC2DBstart
-  # Mon-Fri 09:30-17:30 IST => 04:00-12:00 UTC
+  # GROUP 5: QAEC2DBstart - QAEC2DBstop
+  # Mon-Fri 09:37-17:30 IST => 04:00-12:00 UTC
   # -------------------------------------------------------
   - name: business_hours_group5
     time_intervals:
       - weekdays: ['monday:friday']
         times:
-          - start_time: '04:00'
+          - start_time: '04:07'
             end_time: '12:00'
