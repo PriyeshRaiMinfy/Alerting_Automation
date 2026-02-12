@@ -194,3 +194,202 @@ groups:
           description: "Critical: CPU load on {{ $labels.instance_name }} has exceeded 90%. High CPU usage may lead to performance issues. Immediate action is required."
           VALUE: "{{ $value }}"
           LABELS: "{{ $labels }}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# =======================================================
+## G1 group
+# =======================================================
+      - alert: DiskUsageG1_trouble
+        expr: ((node_filesystem_size_bytes{Disk="G1"} - node_filesystem_free_bytes{Disk="G1"}) / node_filesystem_size_bytes{Disk="G1"} * 100) >= 80
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "High disk usage on {{ $labels.instance_name }}since 5m"
+          description: "Trouble: Disk usage is over 80% on {{ $labels.instance_name }} since 5 minutes. Attention needed to avoid storage issues."
+          VALUE: '{{ $value }}'
+          LABELS: '{{ $labels }}'
+# -------------------------------------------------------
+      - alert: DiskUsageG1_critical
+        expr: ((node_filesystem_size_bytes{Disk="G1"} - node_filesystem_free_bytes{Disk="G1"}) / node_filesystem_size_bytes{Disk="G1"} * 100) >= 85
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "High disk usage on {{ $labels.instance_name }}since 5m"
+          description: "Trouble: Disk usage is over 85% on {{ $labels.instance_name }} since 5 minutes.Attention needed to avoid storage issues."
+          VALUE: '{{ $value }}'
+          LABELS: '{{ $labels }}'
+# -------------------------------------------------------
+      - alert: DiskUsageG1_extreme
+        expr: ((node_filesystem_size_bytes{Disk="G1"} - node_filesystem_free_bytes{Disk="G1"}) / node_filesystem_size_bytes{Disk="G1"} * 100) >= 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High disk usage on {{ $labels.instance_name }}since 5m"
+          description: "critical: Disk usage is over 90% on {{ $labels.instance_name }} since 5 minutes. Immediate Attention needed to avoid storage issues."
+          VALUE: '{{ $value }}'
+          LABELS: '{{ $labels }}'
+# ================================================================================
+### G2 group
+# ================================================================================
+      - alert: DiskUsageG2_trouble
+        expr: ((node_filesystem_size_bytes{Disk="G2"} - node_filesystem_free_bytes{Disk="G2"}) / node_filesystem_size_bytes{Disk="G2"} * 100) >= 88
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "High disk usage on {{ $labels.instance_name }}since 5m"
+          description: "Trouble: Disk usage is over 88% on {{ $labels.instance_name }} since 5 minutes. Immediate attention is needed to avoid storage issues."
+          VALUE: '{{ $value }}'
+          LABELS: '{{ $labels }}'
+#-------------------------------------------------------------------------------- 
+      - alert: DiskUsageG2_critical
+        expr: ((node_filesystem_size_bytes{Disk="G2"} - node_filesystem_free_bytes{Disk="G2"}) / node_filesystem_size_bytes{Disk="G2"} * 100) >= 91
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "High disk usage on {{ $labels.instance_name }}since 5m"
+          description: "Trouble: Disk usage is over 91% on {{ $labels.instance_name }} since 5 minutes. Attention needed to avoid storage issues."
+          VALUE: '{{ $value }}'
+          LABELS: '{{ $labels }}'
+# -------------------------------------------------------------------------------
+      - alert: DiskUsageG2_extreme
+        expr: ((node_filesystem_size_bytes{Disk="G2"} - node_filesystem_free_bytes{Disk="G2"}) / node_filesystem_size_bytes{Disk="G2"} * 100) >= 95
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High disk usage on {{ $labels.instance_name }}since 5m"
+          description: "Critical: Disk usage is over 95% on {{ $labels.instance_name }} since 5 minutes. Immediate attention needed to avoid storage issues."
+          VALUE: '{{ $value }}'
+          LABELS: '{{ $labels }}'
+# ================================================================================
+## G3 group
+# ================================================================================
+      - alert: DiskUsageG3_trouble
+        expr: ((node_filesystem_size_bytes{Disk="G3"} - node_filesystem_free_bytes{Disk="G3"}) / node_filesystem_size_bytes{Disk="G3"} * 100) >= 90
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "High disk usage on {{ $labels.instance_name }}since 5m"
+          description: "Trouble: Disk usage is over 90% on {{ $labels.instance_name }} since 5 minutes. Attention needed to avoid storage issues."
+          VALUE: '{{ $value }}'
+          LABELS: '{{ $labels }}'
+# -----------------------------------------------------------------------
+      - alert: DiskUsageG3_critical
+        expr: ((node_filesystem_size_bytes{Disk="G3"} - node_filesystem_free_bytes{Disk="G3"}) / node_filesystem_size_bytes{Disk="G3"} * 100) >= 92
+        for: 5m
+        labels:
+          severity: trouble
+        annotations:
+          summary: "High disk usage on {{ $labels.instance_name }}since 5m"
+          description: "Trouble: Disk usage is over 92% on {{ $labels.instance_name }} since 5 minutes. Attention needed to avoid storage issues."
+          VALUE: '{{ $value }}'
+          LABELS: '{{ $labels }}'
+# -----------------------------------------------------------------------
+      - alert: DiskUsageG3_extreme
+        expr: ((node_filesystem_size_bytes{Disk="G3"} - node_filesystem_free_bytes{Disk="G3"}) / node_filesystem_size_bytes{Disk="G3"} * 100) >= 95
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High disk usage on {{ $labels.instance_name }}since 5m"
+          description: "Trouble: Disk usage is over 95% on {{ $labels.instance_name }} since 5 minutes. Immediate attention needed to avoid storage issues."
+          VALUE: '{{ $value }}'
+          LABELS: '{{ $labels }}'
