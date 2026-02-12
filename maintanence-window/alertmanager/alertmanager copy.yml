@@ -1,0 +1,60 @@
+global:
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'priyesh.delhi96@gmail.com'
+  smtp_auth_username: 'priyesh.delhi96@gmail.com'
+  smtp_auth_password: 'uszu xrck sjor ebrn'
+  smtp_require_tls: true
+
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+# ---------------------------------------------------
+# 1 
+time_intervals:
+  - name: business_days
+    time_intervals:
+      - weekdays: ['monday:friday']
+        times: 
+          - start_time: '07:10'
+            end_time: '07:25'
+
+# 2 
+  # - name: maintenance_window
+  #   time_intervals:
+  #     - times:
+  #       - start_time: '01:24'
+  #         end_time: '01:30'
+# ---------------------------------------------------
+route:
+  group_by: ['alertname','environment','instance_name']
+  group_wait: 5s
+  group_interval: 10s
+  repeat_interval: 3m
+  receiver: email-alert
+
+  routes:
+#-----------------Non-Production Server Down Alert - Mute during maintenance window ------------------------ 
+    - matchers:
+        - alertname="NonProdServerDown_TESTING"
+      receiver: email-alert
+      
+      # repeat_interval: 3m
+      # continue: false
+#   Using time_intervals to mute alerts during maintenance window 
+      active_time_intervals:
+        - business_days
+      # mute_time_intervals:
+      #   - maintenance_window
+# -----------------------------------------------------------------------------------------------------------
+# -----------------Production Server Down Alert    - 24X7 Monitoring -----------------------------------------
+    - matchers:
+        - alertname="ProdServerDown_TESTING"
+      receiver: email-alert
+      
+      # repeat_interval: 5m
+      # continue: false
+# -----------------------------------------------------------------------------------------------------------
+receivers:
+  - name: email-alert
+    email_configs:
+      - to: 'priyeshrai.delhi@gmail.com'
+        send_resolved: true
